@@ -1,12 +1,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 
 namespace DotNetSudoku {
 	using C = CellInt16;
 	using IC = ICell<CellInt16>;
 	
+	[DebuggerDisplay("{ToString(),nq}, Bits = {_bits,h}")]
+	[ImmutableObject(true)]
+	[Serializable]
 	public struct CellInt16 : IC
 	{
 		private short _bits;
