@@ -19,7 +19,7 @@ namespace DotNetSudoku {
 		protected const byte w = 3, h = 3, l = w * h, cc = l * l;
 		protected const byte rcount = l * 3;
 		
-		public override C EmptyCell { get { return 0; } }
+		public override C EmptyCell { get { return any; } }
 		protected override IList<R> InitRegions(int count) {
 			IList<R> regions = new List<R>(count);
 			for(byte y = 0; y < l; ++y)
@@ -37,7 +37,13 @@ namespace DotNetSudoku {
 		protected Board9x9(int cellsCount, RC regions) : base(cellsCount, regions) { }
 		protected Board9x9(B board) : base(board) { _i = board._i; }
 		
+		[Browsable(false)]
+		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		protected static readonly C any = (C)0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+		protected static readonly C none = ~(new C());
+		
 		public static char CellToChar(C c) {
+			c &= any;
 			if(!c.HasValue) return '_';
 			/*//
 			if(c == none) return 'x';
@@ -55,9 +61,9 @@ namespace DotNetSudoku {
 			return i < 0 ? 'x' : (char)('1' + i);
 		}
 		public static C? CharToCell(char ch) {
-			if('_' == ch || ch == '0') return 0;
+			if('_' == ch || ch == '0') return any;
 			if('1' <= ch && ch <= '9') return ch - '1';
-			if('x' == ch) return -1;
+			if('x' == ch) return none;
 			return null;
 		}
 		

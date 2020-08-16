@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -64,8 +65,18 @@ namespace DotNetSudoku {
 		public bool Equals(C c) { return _bits == c._bits; }
 		public override bool Equals(object o) { return o is C && Equals((C)o); }
 		
+		C IC.Not() { return new C(~_bits); }
+		C IC.And(C c) { return new C(_bits | c._bits); }
+		C IC.Xor(C c) { return new C(~(_bits ^ c._bits)); }
+		C IC.Or(C c) { return new C(_bits & c._bits); }
+		
 		public static bool operator ==(C l, C r) { return l.Equals(r); }
 		public static bool operator !=(C l, C r) { return !l.Equals(r); }
+		
+		public static C operator ~(C c) { return ((IC)c).Not(); }
+		public static C operator &(C l, C r) { return ((IC)l).And(r); }
+		public static C operator ^(C l, C r) { return ((IC)l).Xor(r); }
+		public static C operator |(C l, C r) { return ((IC)l).Or(r); }
 		
 		public static implicit operator C(int value) {
 			if(value == -1) return new C(-1);
