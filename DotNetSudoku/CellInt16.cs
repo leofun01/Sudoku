@@ -65,6 +65,12 @@ namespace DotNetSudoku {
 			for(int i = 0; i < _s; ++i)
 				if(this[i]) yield return i;
 		}
+		IEnumerator<C> ICell<C>.GetEnumerator() {
+			// foreach(C c in this) yield return c;
+			for(int i = 0; i < _s; ++i)
+				if(this[i]) yield return (C)i;
+		}
+		IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
 		public bool Equals(C c) { return _bits == c._bits; }
 		public override bool Equals(object o) { return o is C && Equals((C)o); }
 		
