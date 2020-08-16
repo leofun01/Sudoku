@@ -29,6 +29,23 @@ namespace DotNetSudoku {
 				return (b + 1 | b) == -1;
 			}
 		}
+		public int ToInt() {
+			if(_bits == -1) return -1;
+			int b = ~(-1 << _s | _bits);
+			// int b = (-1 << _s | _bits) ^ -1;
+			if((b - 1 & b) != 0)
+				throw new InvalidOperationException();
+			int i = 0;
+			int s = _s;
+			while(b > 1) {
+				s >>= 1;
+				if((-1 << s & b) != 0) {
+					b >>= s;
+					i += s;
+				}
+			}
+			return i;
+		}
 		public override string ToString() {
 			StringBuilder sb = new StringBuilder("{");
 			IEnumerator<int> e = GetEnumerator();

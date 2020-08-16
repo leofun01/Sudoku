@@ -6,5 +6,6 @@ namespace DotNetSudoku {
 	{
 		bool this[int i] { get; set; }
 		bool HasValue { get; }
+		int ToInt();
 	}
 }
