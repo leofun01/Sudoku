@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 
 namespace DotNetSudoku {
+	// using C = CellInt16;
 	using R = IOrderedSet<int>;
 	using RC = ReadOnlyCollection<IOrderedSet<int>>;
 	
@@ -35,6 +36,8 @@ namespace DotNetSudoku {
 			_valid = board._valid;
 		}
 		
+		public static readonly C InvalidCell = (new C()).Not();
+		
 		public int CellsCount { get { return _cells.GetLength(0); } }
 		// int IOrderedSet<int>.Count { get { return CellsCount; } }
 		public bool? IsValid { get { return _valid; } }
@@ -42,9 +45,70 @@ namespace DotNetSudoku {
 			[DebuggerStepThrough]
 			get { return _cells[i]; }
 			[DebuggerStepThrough]
-			set { _cells[i] = value; }
+			set {
+				C ci = this[i];
+				C ni = ci.And(value);
+				if(ci.Equals(ni)) return;
+				_cells[i] = ni;
+				ni = this[i];
+				if(ni.HasValue) {
+					// Console.SetCursorPosition(0, 0);
+					// System.Threading.Thread.Sleep(200);
+					// // Console.Clear();
+					// _cells[i] = InvalidCell;
+					// Console.WriteLine(this);
+					// _cells[i] = ni;
+					if(ni.Equals(InvalidCell))
+						_valid = false;
+					else
+						foreach(int a in GetAffected(i))
+							if(i != a) this[a] = ni.Not();
+				}
+			}
 		}
 		
+		private int _getUndefinedFirst() {
+			int i = 0, count = CellsCount;
+			for(; i < count && this[i].HasValue; ++i)
+				if(this[i].Equals(InvalidCell)) _valid = false;
+			if(i == count && !_valid.HasValue) _valid = true;
+			return i;
+		}
+		private int _getUndefinedMinSet() {
+			int i = 0, count = CellsCount;
+			int minSet = int.MaxValue, minIdx = count;
+			bool? valid = true;
+			for(; i < count; ++i) {
+				C c = this[i];
+				if(c.HasValue) continue;
+				if(c.Equals(InvalidCell)) {
+					valid = false;
+					continue;
+				}
+				int set = 0;
+				foreach(int _ in (IEnumerable<int>)c) ++set;
+				if(set > 1 && set < minSet) {
+					minSet = set;
+					minIdx = i;
+					if(valid.HasValue && valid.Value)
+						valid = null;
+				}
+			}
+			_valid = valid;
+			return minIdx;
+		}
+		public bool IsComplete() {
+			return _getUndefinedFirst() >= CellsCount;
+		}
+		public R GetAffected(int i) {
+			if(_affected[i] != null) return _affected[i];
+			R a = OrderedSet<int>.Empty;
+			foreach(R r in _regions)
+				if(r.Contains(i))
+					a = a.Union<int>(r);
+			_affected[i] = a;
+			return a;
+		}
 		public Board<C> GetClone() {
 			Board<C> clone = (Board<C>)MemberwiseClone();
 			if(_cells != null) {
