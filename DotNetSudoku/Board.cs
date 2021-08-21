@@ -117,6 +117,7 @@ namespace DotNetSudoku {
 				Array.Copy(_cells, clone._cells, cc);
 			}
 			// if(_regions != null) clone._regions = _regions;
+			clone._log = new List<string>();
 			return clone;
 		}
 		IBoard<C> IBoard<C>.GetClone() { return GetClone(); }
@@ -124,5 +125,133 @@ namespace DotNetSudoku {
 			return ((IEnumerable<C>)_cells).GetEnumerator();
 		}
 		IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+		
+		private List<string> _log = new List<string>();
+		public void PrintLog(System.IO.TextWriter writer, bool clear = false) {
+			foreach(string s in _log)
+				writer.WriteLine(s);
+			if(clear) _log.Clear();
+		}
+		private void _tryToSolve() {
+			bool found;
+			do {
+				found = false;
+				// for()
+				foreach(R r in _regions) {
+					foreach(int i in r) {
+						C t = this[i];
+						if(t.HasValue) continue;
+						C a = t;
+						foreach(int j in r)
+							if(i != j)
+								a = a.And(this[j].Not());
+						if(a.HasValue && !a.Equals(InvalidCell) && !t.Equals(a)) {
+							found = true;
+							_log.Add(string.Format("A[{0}: {1}\t-> {2}]", i, t, a));
+							this[i] = a;
+						}
+					}
+				}//*/
+				foreach(R ro in _regions) {
+					foreach(R ri in _regions) {
+						if(ReferenceEquals(ro, ri)) continue;
+						R x = ro.Intersect<int>(ri);
+						if(x.Count < 2) continue;
+						C a = InvalidCell;
+						foreach(int i in x)
+							a = a.Or(this[i]);
+						foreach(int i in ro.Except<int>(ri))
+							a = a.And(this[i].Not());
+						if(!a.Equals(InvalidCell))
+							foreach(int i in ri.Except<int>(ro)) {
+								C t = this[i];
+								C ta = t.And(a.Not());
+								if(!t.Equals(ta)) {
+									found = true;
+									_log.Add(string.Format("B[{0}: {1}\t-> {2}]", i, t, ta));
+									this[i] = ta;
+								}
+							}
+					}
+				}
+				/*//
+				foreach(R r in _regions) {
+					int cc = 0;
+					foreach(int i in r)
+						if(!this[i].HasValue)
+							++cc;
+					// if(cc < 3) continue;
+					for(int count = 2; count < cc; ++count) {
+						int used = 0;
+						Stack<IEnumerator<int>> stack = new Stack<IEnumerator<int>>();
+						while(true) {
+							IEnumerator<int> e = r.GetEnumerator();
+							bool moved = e.MoveNext();
+							stack.Push(e);
+						}
+					}
+				}
+				//*/
+			} while(found);
+		}
+		public Board<C> TryToSolve(int depth) {
+			if(depth <= 0) return this;
+			int i;
+			int? cc = null;
+			C t;
+			Board<C> solution;
+			bool? v;
+			do {
+				_tryToSolve();
+				i = _getUndefinedMinSet();
+				if(depth == 1) return this;
+				if(_valid.HasValue && !_valid.Value) return this;
+				if(!cc.HasValue) cc = CellsCount;
+				if(i < 0 || cc.Value <= i) return this;
+				t = this[i];
+				solution = null;
+				v = false;
+				foreach(C c in t) {
+					Board<C> clone = GetClone();
+					clone[i] = c;
+					clone.TryToSolve(depth - 1);
+					if(clone.IsValid.HasValue) {
+						if(clone.IsValid.Value) {	//	clone.IsValid == true
+							if(ReferenceEquals(solution, null)) {
+								solution = clone;
+								// solution = v.Value ? clone : this;
+								if(v.HasValue) {
+									v = true;
+									solution._log.Add(string.Format("Z[{0}: {1}\t-> {2}]", i, t, c));
+								}
+							}
+							else {
+								v = false;
+								break;
+							}
+						}
+						else {						//	clone.IsValid == false
+							this[i] = t.And(c.Not());
+							if(!t.Equals(this[i])) {
+								_log.Add(string.Format("Z[{0}: {1}\t-> {2}]", i, t, this[i]));
+								break;
+							}
+						}
+					}
+					else {							//	clone.IsValid == null
+						v = null;
+						solution = null;
+						break;
+					}
+				}
+			} while(!t.Equals(this[i]));
+			_valid = v;
+			if(v.HasValue && v.Value) {
+				_cells = solution._cells;
+				_log.AddRange(solution._log);
+				solution = null;
+			}
+			return ReferenceEquals(solution, null) ? this : solution;
+		}
 	}
 }
