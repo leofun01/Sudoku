@@ -1,5 +1,9 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
+using System.Text;
 
 namespace DotNetSudoku {
 	using B = Board9x9Overlap;
